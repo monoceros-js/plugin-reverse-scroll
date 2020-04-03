@@ -39,7 +39,8 @@ const ReverseScrollPlugin = function (cluster, overrides) {
       const next = scrollY + scrollY * this.options.speed
       instance.y.current = next
       instance.y.end = scrollY
-      gsap.to(el, 0, { y: next })
+      el.style.transform = `translate(0, ${next}px)`
+      // gsap.to(el, 0, { y: next })
 
       if (!instance.inView) {
         if (this.options.debug) {
@@ -51,7 +52,8 @@ const ReverseScrollPlugin = function (cluster, overrides) {
         this.instances[index].inView = true
       }
     } else if (aboveContainer && instance.inView) {
-      gsap.to(el, 0, { y: 0 })
+      el.style.transform = 'translate(0, 0)'
+      // gsap.to(el, 0, { y: 0 })
       if (this.options.debug) {
         this.log(
           'ReverseScrollingPlugin: Left reverse-scrolling instance.',
@@ -60,7 +62,8 @@ const ReverseScrollPlugin = function (cluster, overrides) {
       }
       this.instances[index].inView = false
     } else if (belowContainer && instance.inView) {
-      gsap.to(el, 0, { y: instance.y.current })
+      el.style.transform = `translate(0, ${instance.y.current}px)`
+      // gsap.to(el, 0, { y: instance.y.current })
       if (this.options.debug) {
         this.log(
           'ReverseScrollingPlugin: Left reverse-scrolling instance',
@@ -119,9 +122,10 @@ const ReverseScrollPlugin = function (cluster, overrides) {
         ? this.dom.viewport.clientHeight
         : container.scrollHeight
 
-    gsap.to(instance.el, 0, {
-      top: -1 * el.scrollHeight + offset,
-    })
+    el.style.top = -1 * el.scrollHeight + offset + 'px'
+    // gsap.to(instance.el, 0, {
+    //   top: -1 * el.scrollHeight + offset,
+    // })
 
     this.createScrollerGhost(el, this.dom.viewport)
   }

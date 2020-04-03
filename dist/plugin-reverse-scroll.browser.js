@@ -255,9 +255,7 @@ var ReverseScrollPlugin = (function () {
         var next = scrollY + scrollY * _this.options.speed;
         instance.y.current = next;
         instance.y.end = scrollY;
-        gsap.to(el, 0, {
-          y: next
-        });
+        el.style.transform = "translate(0, ".concat(next, "px)"); // gsap.to(el, 0, { y: next })
 
         if (!instance.inView) {
           if (_this.options.debug) {
@@ -267,9 +265,7 @@ var ReverseScrollPlugin = (function () {
           _this.instances[index].inView = true;
         }
       } else if (aboveContainer && instance.inView) {
-        gsap.to(el, 0, {
-          y: 0
-        });
+        el.style.transform = 'translate(0, 0)'; // gsap.to(el, 0, { y: 0 })
 
         if (_this.options.debug) {
           _this.log('ReverseScrollingPlugin: Left reverse-scrolling instance.', _this.instances[index]);
@@ -277,9 +273,7 @@ var ReverseScrollPlugin = (function () {
 
         _this.instances[index].inView = false;
       } else if (belowContainer && instance.inView) {
-        gsap.to(el, 0, {
-          y: instance.y.current
-        });
+        el.style.transform = "translate(0, ".concat(instance.y.current, "px)"); // gsap.to(el, 0, { y: instance.y.current })
 
         if (_this.options.debug) {
           _this.log('ReverseScrollingPlugin: Left reverse-scrolling instance', _this.instances[index]);
@@ -319,9 +313,9 @@ var ReverseScrollPlugin = (function () {
       var instanceIndex = _this.instances.push(_this.cluster.resolve('createMonocerosInstance')(el)) - 1;
       var instance = _this.instances[instanceIndex];
       var offset = container.scrollHeight > _this.dom.viewport.clientHeight ? _this.dom.viewport.clientHeight : container.scrollHeight;
-      gsap.to(instance.el, 0, {
-        top: -1 * el.scrollHeight + offset
-      });
+      el.style.top = -1 * el.scrollHeight + offset + 'px'; // gsap.to(instance.el, 0, {
+      //   top: -1 * el.scrollHeight + offset,
+      // })
 
       _this.createScrollerGhost(el, _this.dom.viewport);
     };
