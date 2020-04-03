@@ -1,0 +1,5 @@
+{
+  "global": "ReverseScrollPlugin",
+  "filename": "plugin-reverse-scroll",
+  "dependencies": ["ReverseScrollPluginError"]
+}
