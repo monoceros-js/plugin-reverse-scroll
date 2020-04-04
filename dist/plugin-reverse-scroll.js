@@ -177,7 +177,7 @@ var defaultOptions = {
   debug: false
 };
 
-var version = "1.0.0";
+var version = "1.0.1";
 
 var MonocerosError = /*#__PURE__*/function (_Error) {
   _inherits(MonocerosError, _Error);
@@ -221,11 +221,11 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
 
   this.name = 'ReverseScrollPlugin';
   this.version = version;
-  this.cluster = cluster;
+  this.cluster = cluster.createCluster();
   this.instances = [];
-  this.options = this.cluster.resolve('createOptions')(this.cluster.resolve('options'), defaultOptions, overrides);
   this.dom = this.cluster.resolve('dom');
-  this.log = this.cluster.resolve('log');
+  this.options = this.cluster.resolve('options.create')(this.cluster.resolve('options'), defaultOptions, overrides);
+  this.log = this.cluster.resolve('utils.log');
 
   this.logError = function (error) {
     return console.error(error);
@@ -236,10 +236,11 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
   };
 
   this.updateScroller = function (index) {
+    console.log(_this.instances, index);
     var instance = _this.instances[index];
     var el = instance.el;
 
-    var scrollTop = _this.getScrollTop(el.closest(_this.options.selectors.container));
+    var scrollTop = _this.getScrollTop(el.closest(_this.options.selectors.section));
 
     var aboveContainer = scrollTop > 0;
 
@@ -250,9 +251,9 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
 
     if (inContainer) {
       var next = scrollY + scrollY * _this.options.speed;
-      instance.y.current = next;
-      instance.y.end = scrollY;
-      el.style.transform = "translate(0, ".concat(next, "px)"); // gsap.to(el, 0, { y: next })
+      instance.coordinates.y.current = next;
+      instance.coordinates.y.end = scrollY;
+      el.style.transform = "translate(0, ".concat(next, "px) translateZ(0)");
 
       if (!instance.inView) {
         if (_this.options.debug) {
@@ -262,7 +263,7 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
         _this.instances[index].inView = true;
       }
     } else if (aboveContainer && instance.inView) {
-      el.style.transform = 'translate(0, 0)'; // gsap.to(el, 0, { y: 0 })
+      el.style.transform = 'translate(0, 0) translateZ(0)';
 
       if (_this.options.debug) {
         _this.log('ReverseScrollingPlugin: Left reverse-scrolling instance.', _this.instances[index]);
@@ -270,7 +271,7 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
 
       _this.instances[index].inView = false;
     } else if (belowContainer && instance.inView) {
-      el.style.transform = "translate(0, ".concat(instance.y.current, "px)"); // gsap.to(el, 0, { y: instance.y.current })
+      el.style.transform = "translate(0, ".concat(instance.coordinates.y.current, "px) translateZ(0)");
 
       if (_this.options.debug) {
         _this.log('ReverseScrollingPlugin: Left reverse-scrolling instance', _this.instances[index]);
@@ -288,10 +289,10 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
   };
 
   this.initScroller = function (el) {
-    var container = el.closest(_this.options.selectors.container);
+    var container = el.closest(_this.options.selectors.section);
 
     if (!container) {
-      _this.logError(new ReverseScrollPluginError("Missing ".concat(_this.options.selectors.container, " parent for ").concat(_this.options.selectors.reverse, " element. Canceling instance initialization.")));
+      _this.logError(new ReverseScrollPluginError("Missing ".concat(_this.options.selectors.section, " parent for ").concat(_this.options.selectors.reverse, " element. Canceling plugin initialization.")));
 
       return;
     }
@@ -301,18 +302,19 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
     });
 
     if (childNodes.length > 1) {
-      _this.logError(new ReverseScrollPluginError("".concat(_this.options.selectors.reverse, " should be only child of ").concat(_this.options.selectors.container, " element. Canceling instance initialization.")));
+      _this.logError(new ReverseScrollPluginError("".concat(_this.options.selectors.reverse, " should be only child of ").concat(_this.options.selectors.section, " element. Canceling plugin initialization.")));
 
       return;
     }
 
     el.style = "\n      height: 100%;\n      width: 100%;\n      left: 0;\n      top: 0;\n      position: absolute;\n    ";
-    var instanceIndex = _this.instances.push(_this.cluster.resolve('createMonocerosInstance')(el)) - 1;
-    var instance = _this.instances[instanceIndex];
+
+    var createIndex = _this.cluster.resolve('monoceros.createInstance');
+
+    _this.instances.push(createIndex(_this.options.base.reverse, el));
+
     var offset = container.scrollHeight > _this.dom.viewport.clientHeight ? _this.dom.viewport.clientHeight : container.scrollHeight;
-    el.style.top = -1 * el.scrollHeight + offset + 'px'; // gsap.to(instance.el, 0, {
-    //   top: -1 * el.scrollHeight + offset,
-    // })
+    el.style.top = -1 * el.scrollHeight + offset + 'px';
 
     _this.createScrollerGhost(el, _this.dom.viewport);
   };
@@ -324,23 +326,21 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
   };
 
   this.init = function () {
+    if (_this.options.speed < 0 || _this.options.speed > 1) {
+      console.warn(new _this.ReverseScrollPluginError('options.speed should be a value between 0 and 1. Reverted to 1.'));
+      _this.options.speed = 1;
+    }
+
     var elements = Array.from(document.querySelectorAll(_this.options.selectors.reverse));
 
     if (elements.length === 0) {
-      throw new ReverseScrollPluginError("Missing ".concat(_this.options.selectors.reverse, " element. Canceling plugin intialization."));
+      _this.logError(new ReverseScrollPluginError("Missing ".concat(_this.options.selectors.reverse, " element. Canceling plugin intialization.")));
+
+      return;
     }
 
     elements.forEach(function (element, index) {
       _this.initScroller(element, index);
-    });
-
-    var instancesObserver = _this.cluster.resolve('createObserver')({
-      root: _this.dom.viewport,
-      className: _this.options.classNames.in_viewport
-    });
-
-    _this.instances.forEach(function (instance) {
-      instancesObserver.observe(instance.el);
     });
 
     _this.dom.viewport.addEventListener('scroll', _this.onScroll);
