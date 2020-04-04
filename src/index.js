@@ -5,15 +5,15 @@ import { ReverseScrollPluginError } from './errors'
 const ReverseScrollPlugin = function (cluster, overrides) {
   this.name = 'ReverseScrollPlugin'
   this.version = version
-  this.cluster = cluster
+  this.cluster = cluster.createCluster()
   this.instances = []
-  this.options = this.cluster.resolve('createOptions')(
+  this.dom = this.cluster.resolve('dom')
+  this.options = this.cluster.resolve('options.create')(
     this.cluster.resolve('options'),
     defaultOptions,
     overrides
   )
-  this.dom = this.cluster.resolve('dom')
-  this.log = this.cluster.resolve('log')
+  this.log = this.cluster.resolve('utils.log')
   this.logError = error => console.error(error)
 
   this.getScrollTop = el => {
@@ -21,11 +21,12 @@ const ReverseScrollPlugin = function (cluster, overrides) {
   }
 
   this.updateScroller = index => {
+    console.log(this.instances, index)
     const instance = this.instances[index]
     const el = instance.el
 
     const scrollTop = this.getScrollTop(
-      el.closest(this.options.selectors.container)
+      el.closest(this.options.selectors.section)
     )
 
     const aboveContainer = scrollTop > 0
@@ -37,10 +38,9 @@ const ReverseScrollPlugin = function (cluster, overrides) {
     const scrollY = Math.abs(scrollTop)
     if (inContainer) {
       const next = scrollY + scrollY * this.options.speed
-      instance.y.current = next
-      instance.y.end = scrollY
-      el.style.transform = `translate(0, ${next}px)`
-      // gsap.to(el, 0, { y: next })
+      instance.coordinates.y.current = next
+      instance.coordinates.y.end = scrollY
+      el.style.transform = `translate(0, ${next}px) translateZ(0)`
 
       if (!instance.inView) {
         if (this.options.debug) {
@@ -52,8 +52,7 @@ const ReverseScrollPlugin = function (cluster, overrides) {
         this.instances[index].inView = true
       }
     } else if (aboveContainer && instance.inView) {
-      el.style.transform = 'translate(0, 0)'
-      // gsap.to(el, 0, { y: 0 })
+      el.style.transform = 'translate(0, 0) translateZ(0)'
       if (this.options.debug) {
         this.log(
           'ReverseScrollingPlugin: Left reverse-scrolling instance.',
@@ -62,8 +61,7 @@ const ReverseScrollPlugin = function (cluster, overrides) {
       }
       this.instances[index].inView = false
     } else if (belowContainer && instance.inView) {
-      el.style.transform = `translate(0, ${instance.y.current}px)`
-      // gsap.to(el, 0, { y: instance.y.current })
+      el.style.transform = `translate(0, ${instance.coordinates.y.current}px) translateZ(0)`
       if (this.options.debug) {
         this.log(
           'ReverseScrollingPlugin: Left reverse-scrolling instance',
@@ -85,11 +83,11 @@ const ReverseScrollPlugin = function (cluster, overrides) {
   }
 
   this.initScroller = el => {
-    const container = el.closest(this.options.selectors.container)
+    const container = el.closest(this.options.selectors.section)
     if (!container) {
       this.logError(
         new ReverseScrollPluginError(
-          `Missing ${this.options.selectors.container} parent for ${this.options.selectors.reverse} element. Canceling instance initialization.`
+          `Missing ${this.options.selectors.section} parent for ${this.options.selectors.reverse} element. Canceling plugin initialization.`
         )
       )
       return
@@ -98,7 +96,7 @@ const ReverseScrollPlugin = function (cluster, overrides) {
     if (childNodes.length > 1) {
       this.logError(
         new ReverseScrollPluginError(
-          `${this.options.selectors.reverse} should be only child of ${this.options.selectors.container} element. Canceling instance initialization.`
+          `${this.options.selectors.reverse} should be only child of ${this.options.selectors.section} element. Canceling plugin initialization.`
         )
       )
       return
@@ -111,11 +109,9 @@ const ReverseScrollPlugin = function (cluster, overrides) {
       top: 0;
       position: absolute;
     `
+    const createIndex = this.cluster.resolve('monoceros.createInstance')
 
-    const instanceIndex =
-      this.instances.push(this.cluster.resolve('createMonocerosInstance')(el)) -
-      1
-    const instance = this.instances[instanceIndex]
+    this.instances.push(createIndex(this.options.base.reverse, el))
 
     const offset =
       container.scrollHeight > this.dom.viewport.clientHeight
@@ -123,9 +119,6 @@ const ReverseScrollPlugin = function (cluster, overrides) {
         : container.scrollHeight
 
     el.style.top = -1 * el.scrollHeight + offset + 'px'
-    // gsap.to(instance.el, 0, {
-    //   top: -1 * el.scrollHeight + offset,
-    // })
 
     this.createScrollerGhost(el, this.dom.viewport)
   }
@@ -137,25 +130,27 @@ const ReverseScrollPlugin = function (cluster, overrides) {
   }
 
   this.init = () => {
+    if (this.options.speed < 0 || this.options.speed > 1) {
+      console.warn(
+        new this.ReverseScrollPluginError(
+          'options.speed should be a value between 0 and 1. Reverted to 1.'
+        )
+      )
+      this.options.speed = 1
+    }
     const elements = Array.from(
       document.querySelectorAll(this.options.selectors.reverse)
     )
     if (elements.length === 0) {
-      throw new ReverseScrollPluginError(
-        `Missing ${this.options.selectors.reverse} element. Canceling plugin intialization.`
+      this.logError(
+        new ReverseScrollPluginError(
+          `Missing ${this.options.selectors.reverse} element. Canceling plugin intialization.`
+        )
       )
+      return
     }
     elements.forEach((element, index) => {
       this.initScroller(element, index)
-    })
-
-    const instancesObserver = this.cluster.resolve('createObserver')({
-      root: this.dom.viewport,
-      className: this.options.classNames.in_viewport,
-    })
-
-    this.instances.forEach(instance => {
-      instancesObserver.observe(instance.el)
     })
 
     this.dom.viewport.addEventListener('scroll', this.onScroll)
