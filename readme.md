@@ -9,6 +9,7 @@
 - [Install](#install)
   - [NPM](#npm)
 - [Usage](#usage)
+  - [With options](#with-options)
   - [HTML setup](#html-setup)
 - [License](#license)
 
@@ -33,6 +34,7 @@ Monoceros
 ```
 
 ### With options
+
 ```js
 import Monoceros from 'monoceros'
 import ReverseScrollPlugin from '@monoceros/plugin-reverse-scroll'
@@ -42,13 +44,15 @@ Monoceros
 ```
 
 #### Options
-| Property | Type | Default | Description |
-| -------- | ---- | ------- | ----------- |
+
+| Property | Type      | Default | Description                                                                       |
+| -------- | --------- | ------- | --------------------------------------------------------------------------------- |
 | `debug`  | `boolean` | `false` | Controls wether or not ReverseScrollPlugin will output debug logs to the console. |
-| `speed` | `number` | `1` | Scroll speed. Should be beteen 0 and 1. The lower, the slower.
-| `base` | `object` | _base_ | Selector and classnames use this value to generate with.
+| `speed`  | `number`  | `1`     | Scroll speed. Should be beteen 0 and 1. The lower, the slower.                    |
+| `base`   | `object`  | _base_  | Selector and classnames use this value to generate with.                          |
 
 ##### Base object
+
 ```js
 {
   reverse: 'reverse'

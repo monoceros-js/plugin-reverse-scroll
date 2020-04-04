@@ -21,7 +21,6 @@ const ReverseScrollPlugin = function (cluster, overrides) {
   }
 
   this.updateScroller = index => {
-    console.log(this.instances, index)
     const instance = this.instances[index]
     const el = instance.el
 

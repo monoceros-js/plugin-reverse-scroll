@@ -177,7 +177,7 @@ var defaultOptions = {
   debug: false
 };
 
-var version = "1.0.1";
+var version = "1.0.2";
 
 var MonocerosError = /*#__PURE__*/function (_Error) {
   _inherits(MonocerosError, _Error);
@@ -236,7 +236,6 @@ var ReverseScrollPlugin = function ReverseScrollPlugin(cluster, overrides) {
   };
 
   this.updateScroller = function (index) {
-    console.log(_this.instances, index);
     var instance = _this.instances[index];
     var el = instance.el;
 
