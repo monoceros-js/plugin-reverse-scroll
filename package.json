@@ -1,6 +1,6 @@
 {
   "name": "@monoceros/plugin-reverse-scroll",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Reverse scroll plugin for @monoceros",
   "main": "dist/plugin-reverse-scroll.js",
   "scripts": {
@@ -8,13 +8,10 @@
     "test": "npm run lint",
     "lint": "npm run lint:md",
     "lint:md": "remark .",
-    "build": "npm run build:production && npm run build:md",
+    "build": "npm run build:module && npm run build:browser && npm run build:md",
     "build:md": "remark readme.md --output",
-    "build:dev": "npm run build:module && npm run build:browser_dev",
-    "build:production": "npm run build:module && npm run build:browser_prod",
     "build:module": "rollup -c --environment BUILD:module",
-    "build:browser_prod": "rollup -c --environment BUILD:browser_production",
-    "build:browser_dev": "rollup -c --environment BUILD:browser_development"
+    "build:browser": "rollup -c --environment BUILD:browser"
   },
   "keywords": [
     "scroll",
